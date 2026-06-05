@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Van Startpunt naar Uitverkocht | Lanceringsplanner</title>
+<meta name="description" content="Jouw interactieve coach lanceringsplanner. Doorloop 4 fases in je eigen tempo en zie je aanbod tot leven komen.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=DM+Sans:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#faf6f1;color:#2d2a33;min-height:100vh}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+const STORAGE_KEY = "unleash-planner";
+
+const SOCIAL_PLATFORMS = ["Instagram", "LinkedIn", "TikTok", "Facebook", "Pinterest", "YouTube Shorts"];
+const CONTENT_CHANNELS = ["E-mail nieuwsbrief", "Podcast", "Blog", "YouTube", "Facebook groep", "Webinar/Live"];
+
+const PHASES = [
+  { key: "p1", label: "Fase 1", num: 1, theme: "Fundament Leggen", subtitle: "Leg de basis voor je lancering", timeline: "3–7 dagen", emoji: "🏗️", color: "#4A2C6B" },
+  { key: "p2", label: "Fase 2", num: 2, theme: "Content Opbouwen", subtitle: "Maak content vanuit de 5 pijlers", timeline: "1–2 weken", emoji: "✍️", color: "#4A2C6B" },
+  { key: "p3", label: "Fase 3", num: 3, theme: "Zichtbaar Worden", subtitle: "Post, reageer en verbind", timeline: "2–4 weken", emoji: "🗣️", color: "#4A2C6B" },
+  { key: "p4", label: "Fase 4", num: 4, theme: "Lanceren & Verkopen", subtitle: "Zet aandacht om in klanten", timeline: "wanneer je klaar bent", emoji: "🚀", color: "#4A2C6B" },
+];
+
+const PILLARS = [
+  { id: 1, name: "Engage & Vermaken", emoji: "✨", color: "#b794d4", desc: "Sociaal en herkenbaar: memes, quotes, relateerbare situaties. Brengt bereik en interactie.", what: "Korte feel-good content, dingen die mensen herkennen of laten lachen. Niet diep, wel deelbaar." },
+  { id: 2, name: "Leren, Activeren & Inspireren", emoji: "💡", color: "#9579c2", desc: "Positioneer jezelf als expert. Reageer direct op pijnpunten, vragen en verlangens.", what: "Tips, inzichten, mini-lessen, transformaties. Bouwt autoriteit en vertrouwen." },
+  { id: 3, name: "Stories vanuit Connectie", emoji: "💛", color: "#c8a8db", desc: "Mensen kopen van mensen. Deel je 'waarom', je verhaal, klantverhalen en lessen.", what: "Origin story, professionele hiccups, klantsuccessen, dagelijkse momenten met betekenis." },
+  { id: 4, name: "Achter de Schermen", emoji: "🏢", color: "#7c6bc4", desc: "Bouw vertrouwen. Wat maakt jou anders? Waar geloof je in? Hoe werk je?", what: "Punten van verschil, brand values, signature methodes, achievements, behind the scenes." },
+  { id: 5, name: "Je Laten Zien & Verkopen", emoji: "🎯", color: "#e8845c", desc: "Verkoop direct. Laat zien wat je aanbiedt, voor wie, met welke transformatie en wat de volgende stap is.", what: "Aanbod details, testimonials, lead magnets, urgentie en directe calls-to-action." },
+];
+
+const STORY_DAYS = [
+  { id: 1, day: "Dag 1", title: "Een Kijkje in je Dag", emoji: "☀️", goal: "Verbinding", desc: "Laat mensen toe in jouw wereld zodat ze het gevoel krijgen dat ze je kennen.", sequence: ["Goedemorgen-story: hoe begint jouw dag?", "Een werkmoment of ritueel dat typisch voor jou is", "Iets persoonlijks: een gedachte, een gevoel, een observatie", "Vraag aan je publiek: 'Hoe begint jouw dag?'", "Afsluitende story: waar je vandaag aan werkt"] },
+  { id: 2, day: "Dag 2", title: "Leer Iets Waardevols", emoji: "📚", goal: "Waarde", desc: "Positioneer jezelf als iemand die haar vak verstaat en kennis vrijgevig deelt.", sequence: ["Hook: 'De grootste fout die ik [doelgroep] zie maken is...'", "Probleem: leg uit wat er misgaat en waarom", "Inzicht: deel jouw expert-visie", "Praktische tip die ze meteen kunnen toepassen", "CTA: 'DM me [woord] voor meer hierover'"] },
+  { id: 3, day: "Dag 3", title: "Bewijs & Resultaten", emoji: "🏆", goal: "Conversie", desc: "Laat zien dat jouw community echte resultaten boekt. Laat anderen voor jou verkopen.", sequence: ["Intro: 'Ik wil je iets bijzonders laten zien...'", "Testimonial of screenshot van een klant", "Context: wie was deze klant voordat ze met jou werkte?", "De transformatie: wat is er veranderd?", "CTA: 'Wil jij dit ook? Stuur me een DM'"] },
+  { id: 4, day: "Dag 4", title: "Start een Gesprek", emoji: "💬", goal: "Engagement", desc: "Krijg je publiek aan het praten zodat je warme leads hebt om te DM-en en content ideeën voor volgende keer.", sequence: ["Een open vraag in een poll of vraagsticker", "Deel een eigen mening of standpunt", "Reageer op antwoorden in je stories", "Highlight een paar mooie reacties (met permissie)", "Bedank je publiek voor het meedoen"] },
+  { id: 5, day: "Dag 5", title: "Mythes Ontkrachten", emoji: "🔥", goal: "Waarde & Autoriteit", desc: "Daag een overtuiging uit die jouw publiek vasthoudt en hen tegenhoudt.", sequence: ["Hook: 'Iedereen denkt dat [mythe]... maar dat klopt niet.'", "Leg uit waar de mythe vandaan komt", "Wat de waarheid wél is", "Waarom dit belangrijk is voor jouw doelgroep", "CTA: 'Wat geloofde jij altijd? Reageer hieronder'"] },
+  { id: 6, day: "Dag 6", title: "Binnen in de Wereld", emoji: "🔑", goal: "Conversie", desc: "Trek het gordijn open en laat mensen zien hoe het er echt uitziet en voelt om met je te werken.", sequence: ["Intro: 'Wil je weten hoe het écht is om met me te werken?'", "Een sneak peek: screenshot van een sessie, materiaal, community", "Wat klanten zeggen over de ervaring", "Beschrijf het gevoel: 'Zo voelt het...'", "CTA: 'Klaar om dit ook te ervaren? Link in bio'"] },
+  { id: 7, day: "Dag 7", title: "Reflectie & Uitnodiging", emoji: "🌙", goal: "Verbinding & Zachte Conversie", desc: "Sluit de cyclus persoonlijk af en zet de volgende in gang.", sequence: ["Reflectie: wat heb jij deze periode geleerd of meegemaakt?", "Een vraag aan je publiek over hun week", "Vooruitblik: waar ben jij de komende tijd mee bezig?", "Zachte uitnodiging: 'Als je hulp wilt met [thema], weet me te vinden'", "Bedankt-story voor je community"] },
+];
+
+const REEL_TYPES = [
+  { id: 1, title: "De Snelle Tip", emoji: "⚡", goal: "Autoriteit + Bereik", duration: "15-30 seconden", desc: "Eén concrete, toepasbare tip die je doelgroep direct kan gebruiken. Kort, krachtig, deelbaar.", structure: ["Hook: trek aandacht in de eerste 2 seconden", "Probleem: benoem waar je doelgroep tegenaan loopt", "Tip: geef je beste advies, specifiek en actionable", "CTA: 'Sla op voor later' of 'Volg voor meer tips'"], hooks: ["De #1 fout die [doelgroep] maakt is...", "Stop met [X]. Doe dit in plaats daarvan.", "Dit ene ding veranderde alles voor mijn klanten."], why: "Korte tips worden opgeslagen en gedeeld. Hoe specifieker de tip, hoe waardevoller hij voelt." },
+  { id: 2, title: "Het Herkenbare Moment", emoji: "😄", goal: "Bereik + Engagement", duration: "7-15 seconden", desc: "Situaties die je doelgroep direct herkent. Laagdrempelig, hoog bereik, mensen taggen hun vrienden.", structure: ["Herkenbare situatie in beeld of tekst", "Jouw reactie of twist erop", "Houd het kort en luchtig"], hooks: ["POV: je hebt net je 5e webinar gevolgd maar nog steeds geen actie ondernomen.", "Ik: 'vandaag ga ik om 17:00 stoppen'. Ook ik om 21:00:", "'Ik heb geen tijd' zeg ik terwijl ik 45 minuten op Instagram scroll."], why: "Mensen taggen vrienden en delen in hun stories. Dit type content brengt nieuwe ogen naar je profiel." },
+  { id: 3, title: "De Mini-Masterclass", emoji: "🎓", goal: "Autoriteit + Vertrouwen", duration: "60-90 seconden", desc: "Leer je publiek één concept in 60-90 seconden. Praat naar de camera of gebruik voice-over met tekstoverlays.", structure: ["Hook: maak duidelijk wat ze gaan leren", "Context: waarom is dit belangrijk?", "Uitleg: breek het concept op in 2-3 stappen", "Samenvatting: herhaal de kern in één zin", "CTA: 'Bewaar deze reel' of 'Wil je meer? Link in bio'"], hooks: ["In 60 seconden leg ik je uit hoe [concept] werkt.", "3 dingen die ik wou dat ik eerder wist over [onderwerp].", "Het simpele framework dat ik gebruik voor [resultaat]."], why: "Bouwt diepe autoriteit. Wordt opgeslagen als referentie en laat zien dat je echt verstand van zaken hebt." },
+  { id: 4, title: "De Mythe-Breaker", emoji: "🔥", goal: "Autoriteit + Engagement", duration: "30-60 seconden", desc: "Start met een verrassende of controversiële stelling. Leg uit waarom het anders zit dan mensen denken.", structure: ["Controversiële opening: 'Nee, [gangbare overtuiging] klopt niet.'", "Leg uit waar de mythe vandaan komt", "Deel wat wél werkt volgens jouw ervaring", "CTA: 'Eens of oneens? Laat het me weten'"], hooks: ["Nee, je hebt geen grote following nodig om te verkopen.", "Het probleem is niet dat je te weinig post...", "Iedereen zegt dat je [X] moet doen. Hier is waarom dat niet werkt."], why: "Creëert gesprekken in de comments. Laat zien dat je een eigen visie hebt en niet klakkeloos trends volgt." },
+  { id: 5, title: "De Zachte Verkoop", emoji: "🎯", goal: "Conversie", duration: "30-60 seconden", desc: "Laat resultaten zien zonder hard te verkopen. Neem mensen mee in je werk, deel klantverhalen, of toon het proces.", structure: ["Intro: neem mensen mee in een moment", "Laat het resultaat of de transformatie zien", "Geef context: wie was deze klant, wat was de situatie?", "CTA: 'Wil jij dit ook? DM me [woord]' of 'Link in bio'"], hooks: ["Dit is wat er gebeurde nadat [klant] met mij ging werken.", "Een kijkje in hoe ik [proces] aanpak voor mijn klanten.", "Van [situatie voor] naar [situatie na] in [tijdperiode]."], why: "Verkoopt zonder te verkopen. Laat je werk voor zich spreken. Mensen kopen als ze het resultaat kunnen voelen." },
+];
+
+const LAUNCH_STEPS = [
+  { id: 1, title: "Teasen & Valideren", emoji: "🔥", timeline: "1-2 weken", goal: "Interesse peilen en e-mailadressen verzamelen", desc: "Je begint elke lancering met het laden van een thema. Je valideert of er vraag is en verzamelt warme leads via een wachtlijst of vragenlijst.", actions: ["Maak een korte vragenlijst (Typeform of Google Forms) over het thema van je aanbod. Focus op pijnpunten, frustraties en verlangens van je doelgroep.", "Stuur de vragenlijst naar je bestaande maillijst. Voeg een deadline toe en eventueel een incentive (kleine prijs, exclusieve toegang).", "Tease op social media: deel dat er iets gaats aankomt rondom dit thema. Wees nieuwsgierig, niet verklappend.", "Post inhoudelijke content over het thema en verwijs naar de vragenlijst in je stories en bio.", "Stuur een reminder naar je lijst: 'Iedereen heeft de vragenlijst al ingevuld, behalve jij.'", "Mail de deelnemers een bedankje en geef een teaser over wat er komt."], principle: "De broodkruimeltechniek: je geeft steeds kleine stukjes informatie in plaats van alles tegelijk. Zo bouw je spanning en nieuwsgierigheid op." },
+  { id: 2, title: "Opwarmen met een Conversie-event", emoji: "🪄", timeline: "3-5 dagen", goal: "Leads warm maken met een laagdrempelig instapmoment", desc: "Je biedt iets laagdrempeligs aan (gratis masterclass, werkboek, mini-training) waarmee je alvast een stukje van de puzzel oplost. Het doel: honger creëren naar meer.", actions: ["Maak een checkout of landingspagina voor je conversie-event. Gebruik een transformatie-zin, bullet points en een duidelijke CTA.", "Deel de resultaten van je vragenlijst via een korte video en nodig respondenten uit voor het conversie-event.", "Introduceer het event op social media via DM-only: 'Stuur me een DM voor de link.' Zo zie je wie al warm is.", "Deel inhoudelijke content rondom het thema en verwijs naar de early bird aanmelding.", "Laat je maillijst weten dat de early bird of aanmelding bijna afloopt."], principle: "Je conversie-event moet een WOW-gevoel geven. Help ze zo goed dat ze daarna alles van je willen kopen. Houd het kort (max 2 uur te consumeren), anders gaan ze uitstellen." },
+  { id: 3, title: "Lanceren & Verkopen", emoji: "🚀", timeline: "5-7 dagen", goal: "Je core aanbod presenteren en verkopen", desc: "Nu pak je door. Je warme lijst heeft waarde gehad, vertrouwt je, en is klaar om de volgende stap te zetten. Maak er een feestje van.", actions: ["Deel je lanceringsaankondiging: maak een trailer, video of enthousiaste post. Wees trots, niet verontschuldigend.", "Start het rijdende trein effect: deel wie al ingestapt is, vier elke klant, laat zien dat het gebeurt.", "Deel elke dag een andere invalshoek: vandaag de inhoud, morgen een testimonial, overmorgen de FAQ.", "DM of mail mensen persoonlijk die je conversie-event gevolgd hebben. Vraag hoe ze het vonden en of er vragen zijn.", "Start met aftellen zodra je op 50% van je plekken zit. Gebruik de aftel-sticker op Instagram.", "Laatste dag: wees de hele dag bereikbaar. Bel twijfelaars, beantwoord vragen, geef de laatste push."], principle: "Het rijdende trein effect: de trein vertrekt sowieso en het is een feest als je meedoet. Dit ademt zelfvertrouwen en creëert FOMO bij wie nog op het perron staat. 25-50% van je sales komen in de laatste dagen." },
+  { id: 4, title: "Afsluiten & Evalueren", emoji: "🎯", timeline: "2-3 dagen", goal: "Afsluiten, evalueren en voorbereiden op de volgende ronde", desc: "De lancering is klaar. Nu is het tijd om te evalueren, te vieren, en de basis te leggen voor de volgende keer.", actions: ["Vier je resultaat, hoe groot of klein ook. Elke klant telt. Deel het met je community.", "Stuur een bedank-mail naar iedereen die heeft deelgenomen aan je conversie-event, ook als ze niet hebben gekocht.", "Evalueer: hoeveel leads, hoeveel conversies, welke content werkte het best, wat doe je volgende keer anders?", "Zet niet-kopers op een wachtlijst voor de volgende ronde. Ze zijn warm, verlies ze niet.", "Overweeg een downsell of alternatief aanbod voor wie niet kon instappen."], principle: "Elke lancering wordt makkelijker. Je bouwt een database op van warme leads, testimonials en content die je hergebruikt. De eerste keer is het spannendst, daarna wordt het een systeem." },
+];
+
+const LIBRARY_ITEMS = [
+  { id: "stories", title: "7-Dagen Stories Sequentie", subtitle: "Een ritmische week vol stories die verbinden én verkopen", emoji: "📱", color: "#b794d4", intro: "Zeven dagelijkse sequenties. Klik op een dag om de exacte stories te zien. Elke dag hieronder is een sequentie van 4-7 stories met een duidelijk thema en doel. Gebruik de structuur zoals hij is en ververs de content elke week." },
+  { id: "reels", title: "Reels Strategie", subtitle: "5 bewezen reel-formats die bereik, autoriteit en klanten opleveren", emoji: "🎬", color: "#7B5BC9", intro: "Reels zijn je motor voor bereik en nieuwe volgers. Stories bouwen de relatie, reels trekken nieuwe mensen aan. Hieronder vind je 5 formats die bewezen werken voor coaches en dienstverleners, met concrete hooks en structuren die je direct kunt gebruiken." },
+  { id: "launch", title: "Je Aanbod Lanceren", subtitle: "Van wachtlijst naar uitverkocht in 4 fases", emoji: "🚀", color: "#4A2C6B", intro: "Je hoeft geen uitgebreide salespage of veel advertentiebudget te hebben om te verkopen. Met de juiste volgorde van teasen, opwarmen, lanceren en afsluiten bouw je stap voor stap momentum op. Het principe is simpel: geef broodkruimels in plaats van het hele brood, en laat je klanten meereizen in het proces. Zo zijn ze al warm en betrokken als je je aanbod presenteert." },
+];
+
+const TASKS = {
+  p1: [
+    { id: "p1t1", text: "Schrijf in één zin op voor wie jouw aanbod is. Niet een doelgroep, maar een echt persoon met een echt probleem." },
+    { id: "p1t2", text: "Kies jouw 1+1 strategie: één primair social media kanaal + één content kanaal. Focus = sneller resultaat." },
+    { id: "p1t3", text: "Bepaal je postfrequentie per kanaal. Wat past bij jouw bandbreedte? Beter consistent met 2 dan inconsistent met 5." },
+    { id: "p1t4", text: "Optimaliseer je bio: zorg dat je voornaam erin staat (cruciaal!), wat je doet, voor wie, en een duidelijke CTA." },
+    { id: "p1t5", text: "Bedenk 3 pinned posts: Connect (wie ben je?), Compelled (waarom jij?), Convert (volgende stap)." },
+    { id: "p1t6", text: "Schrijf jouw lanceringsdoel op. Hoeveel klanten? Wanneer? Maak het concreet." },
+  ],
+  p2: [
+    { id: "p2t1", text: "Lees de 5 content pijlers door (Engage & Vermaken, Leren Activeren & Inspireren, Stories vanuit Connectie, Achter de Schermen, Je Laten Zien & Verkopen). Vink af welke je begrijpt." },
+    { id: "p2t2", text: "Maak 2 'Engage & Vermaken' posts: iets herkenbaars of grappigs voor jouw doelgroep." },
+    { id: "p2t3", text: "Maak 2 'Leren, Activeren & Inspireren' posts: een tip, inzicht of mini-les uit jouw expertise." },
+    { id: "p2t4", text: "Schrijf 1 'Stories vanuit Connectie' post: waarom doe jij dit werk? Wat is je why?" },
+    { id: "p2t5", text: "Maak 1 'Achter de Schermen' post: wat maakt jouw aanpak uniek? Je signature methode?" },
+    { id: "p2t6", text: "Schrijf 1 'Je Laten Zien & Verkopen' post over je aanbod: features, transformatie, CTA." },
+    { id: "p2t7", text: "Plan je content in de 80/20 verdeling: 80% waarde (pijlers 1-4), 20% verkopen (pijler 5)." },
+  ],
+  p3: [
+    { id: "p3t1", text: "Start met posten volgens jouw gekozen frequentie. Reageer binnen 2 uur op elke reactie." },
+    { id: "p3t2", text: "Richt je Stories highlights in: max 6-8, met thema's als Education, Behind the Business, Stories, Selling." },
+    { id: "p3t3", text: "Reageer dagelijks op accounts van jouw doelgroep. Echte, waardevolle reacties, geen 'love this!'." },
+    { id: "p3t4", text: "Gebruik Stories dagelijks om je persoonlijkheid en een kijkje achter de schermen te laten zien. Mensen kopen van mensen." },
+    { id: "p3t5", text: "Vraag je netwerk om je content te delen. Warm netwerk = krachtigste lanceringstool." },
+    { id: "p3t6", text: "Test verschillende content types: reels, carrousels, single images. Kijk wat werkt voor jouw publiek." },
+  ],
+  p4: [
+    { id: "p4t1", text: "Post je officiële lanceringsbericht. Wees direct: wat, voor wie, kosten, hoe aanmelden." },
+    { id: "p4t2", text: "Deel 2-3 testimonials of klantresultaten. Social proof is je sterkste verkooptool." },
+    { id: "p4t3", text: "Voeg authentieke urgentie toe: deadline, beperkt aantal plekken, of een early-bird bonus." },
+    { id: "p4t4", text: "Richt een link menu in (LinkTree of via je website) zodat mensen direct naar je aanbod kunnen." },
+    { id: "p4t5", text: "Stuur persoonlijke DM's naar 10-15 betrokken volgers met een uitnodiging, geen massa-bericht." },
+    { id: "p4t6", text: "Evalueer: wat werkte, wat niet, hoeveel klanten, wat ga je volgende keer anders doen?" },
+  ],
+};
+
+const PRINCIPLES = {
+  p1: "De meest succesvolle coaches hebben één primair kanaal en gaan daar all-in. Focus verslaat verspreiding. Altijd.",
+  p2: "Content die verkoopt voelt niet als verkopen. Het volgt de reis: gezien worden → voelen → kiezen.",
+  p3: "Zichtbaarheid is geen geluk, het is een gewoonte. Je hoeft niet viraal te gaan. Je hebt 10 echte fans nodig.",
+  p4: "Verkopen is niet opdringen. Het is met trots zeggen: 'Ik heb iets gemaakt dat jou écht gaat helpen.'",
+};
+
+const TIPS = {
+  p1: "Vraag Claude: 'Help mij in één zin formuleren wat ik doe, voor wie, en wat het oplevert.' Test 5 versies en kies degene die voelt als jij.",
+  p2: "Geef Claude jouw 5 pijlers en doelgroep en vraag: 'Genereer voor elke pijler 3 post-ideeën met sterke openingszinnen.' Pas aan op jouw stem.",
+  p3: "Laat Claude je reageer-strategie schrijven: 'Geef mij 10 authentieke reacties die ik kan gebruiken op posts van [doelgroep].' Personaliseer ze en gebruik ze wanneer het past.",
+  p4: "Gebruik Claude voor je lanceringscopy: 'Schrijf een lanceringsbericht voor [aanbod] voor [doelgroep]. Duidelijk, niet pushy.' Itereer tot het voelt als jij.",
+};
+
+const INTENTIONS = {
+  p1: "Deze fase draait om helderheid. Je hoeft nog niets te posten, je bouwt het fundament waarop alles rust.",
+  p2: "Deze fase draait om creëren. Maak content vanuit de 5 pijlers nog vóór je iemand iets vraagt te kopen.",
+  p3: "Deze fase draait om aanwezigheid. Niet perfect, wel consistent. Laat zien dat je er bent.",
+  p4: "Deze fase draait om lef. Je hebt iets waardevols gemaakt, tijd om het de wereld in te sturen.",
+};
+
+const REFLECTIONS = {
+  p1: "Als jouw ideale klant jouw bio leest, snapt ze dan in 5 seconden wat jij voor haar kunt betekenen?",
+  p2: "Welke pijler voelt het meest natuurlijk voor jou? En welke daag jij jezelf uit om vaker te gebruiken?",
+  p3: "Wanneer voelde je je in deze fase het meest 'jezelf' online? Doe daar meer van.",
+  p4: "Wat heeft deze lancering je geleerd over jezelf, jouw aanbod en jouw doelgroep?",
+};
+
+const GRAB_PEN = {
+  p1: "Pak een pen: schrijf op wie die ene persoon is voor wie jij dit aanbod gemaakt hebt. Geef haar een naam, leeftijd, en haar grootste frustratie.",
+  p2: "Schets een 12-posts grid op papier en kleur in welke posts welke pijler zijn. Visualiseer de 80/20 balans.",
+  p3: "Schrijf op welke 3 momenten per dag jij actief op social media bent. Zet het in je agenda als afspraak.",
+  p4: "Schrijf je lanceringspost eerst met de hand. Als het op papier klopt, klopt het online ook.",
+};
+
+const ENERGY_BOOST = {
+  p1: "💡 Pro-tip: Eén kanaal beheersen verslaat vijf kanalen middelmatig doen. Focus = aantrekkingskracht.",
+  p2: "🔥 Inzicht: Je kunt zoveel verkopen als je wilt, zolang 80% van je content niet over verkopen gaat.",
+  p3: "⚡ Reality check: Je hoeft niet viraal te gaan. Je hebt 10 echte fans nodig. Die 10 vertellen het door.",
+  p4: "🚀 Onthoud: Eén lancering is het begin. Elke volgende wordt makkelijker.",
+};
+
+function CheckIcon({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+function ChevronDown({ open }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.25s ease" }}>
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+}
+
+function PencilIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e8845c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" />
+    </svg>
+  );
+}
+
+function SaveIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+function LaunchPlanner() {
+  const [loaded, setLoaded] = useState(false);
+  const [saveStatus, setSaveStatus] = useState("");
+  const [activeTab, setActiveTab] = useState("overview");
+  const [checked, setChecked] = useState({});
+  const [openTips, setOpenTips] = useState({});
+  const [openPillar, setOpenPillar] = useState(null);
+  const [openStoryDay, setOpenStoryDay] = useState(null);
+  const [openReelType, setOpenReelType] = useState(null);
+  const [openLaunchStep, setOpenLaunchStep] = useState(null);
+  const [openLibraryItem, setOpenLibraryItem] = useState("stories");
+
+  const [launchOffer, setLaunchOffer] = useState("");
+  const [launchGoal, setLaunchGoal] = useState("");
+  const [launchDate, setLaunchDate] = useState("");
+  const [idealClient, setIdealClient] = useState("");
+
+  const [selectedSocials, setSelectedSocials] = useState([]);
+  const [primaryContent, setPrimaryContent] = useState("");
+  const [socialFrequency, setSocialFrequency] = useState(3);
+  const [contentFrequency, setContentFrequency] = useState(1);
+  const [storiesFrequency, setStoriesFrequency] = useState(3);
+
+  const [pillarCounts, setPillarCounts] = useState({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
+  const [phaseNotes, setPhaseNotes] = useState({ p1: "", p2: "", p3: "", p4: "" });
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const v = localStorage.getItem(STORAGE_KEY);
+        if (v) {
+          const d = JSON.parse(v);
+          if (d.checked) setChecked(d.checked);
+          if (d.launchOffer) setLaunchOffer(d.launchOffer);
+          if (d.launchGoal) setLaunchGoal(d.launchGoal);
+          if (d.launchDate) setLaunchDate(d.launchDate);
+          if (d.idealClient) setIdealClient(d.idealClient);
+          if (d.selectedSocials) setSelectedSocials(d.selectedSocials);
+          if (d.primaryContent) setPrimaryContent(d.primaryContent);
+          if (d.socialFrequency !== undefined) setSocialFrequency(d.socialFrequency);
+          if (d.contentFrequency !== undefined) setContentFrequency(d.contentFrequency);
+          if (d.storiesFrequency !== undefined) setStoriesFrequency(d.storiesFrequency);
+          if (d.pillarCounts) setPillarCounts(d.pillarCounts);
+          if (d.phaseNotes) setPhaseNotes(d.phaseNotes);
+        }
+      } catch (e) {}
+      setLoaded(true);
+    };
+    load();
+  }, []);
+
+  const saveData = useCallback(async () => {
+    if (!loaded) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        checked, launchOffer, idealClient, launchGoal, launchDate,
+        selectedSocials, primaryContent, socialFrequency, contentFrequency,
+        storiesFrequency, pillarCounts, phaseNotes
+      }));
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus(""), 2000);
+    } catch (e) {}
+  }, [checked, launchOffer, idealClient, launchGoal, launchDate,
+      selectedSocials, primaryContent, socialFrequency, contentFrequency,
+      storiesFrequency, pillarCounts, phaseNotes, loaded]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    const timer = setTimeout(saveData, 500);
+    return () => clearTimeout(timer);
+  }, [saveData, loaded]);
+
+  const totalTasks = Object.values(TASKS).flat().length;
+  const completedTasks = Object.values(checked).filter(Boolean).length;
+  const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+  const phaseDone = (k) => TASKS[k].filter((t) => checked[t.id]).length;
+  const phaseTotal = (k) => TASKS[k].length;
+  const phaseComplete = (k) => phaseDone(k) === phaseTotal(k);
+  const phaseProg = (k) => (phaseDone(k) / phaseTotal(k)) * 100;
+
+  const toggleCheck = (id) => setChecked((p) => ({ ...p, [id]: !p[id] }));
+  const toggleSocial = (platform) => setSelectedSocials((prev) => prev.includes(platform) ? prev.filter((p) => p !== platform) : [...prev, platform]);
+  const socialLabel = selectedSocials.length > 0 ? selectedSocials.join(" + ") : "Social media";
+  const updatePhaseNote = (key, val) => setPhaseNotes((prev) => ({ ...prev, [key]: val }));
+
+  const goTo = (tab) => {
+    setActiveTab(tab);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const ci = PHASES.findIndex((p) => p.key === activeTab);
+  const prev = ci > 0 ? PHASES[ci - 1] : null;
+  const next = ci >= 0 && ci < PHASES.length - 1 ? PHASES[ci + 1] : null;
+
+  const totalPillarPosts = Object.values(pillarCounts).reduce((a, b) => a + b, 0);
+  const sellPercent = totalPillarPosts > 0 ? Math.round((pillarCounts[5] / totalPillarPosts) * 100) : 0;
+  const valuePercent = 100 - sellPercent;
+  const isBalanced = totalPillarPosts >= 5 && sellPercent >= 15 && sellPercent <= 25;
+
+  const incrementPillar = (id) => setPillarCounts((p) => ({ ...p, [id]: p[id] + 1 }));
+  const decrementPillar = (id) => setPillarCounts((p) => ({ ...p, [id]: Math.max(0, p[id] - 1) }));
+
+  if (!loaded) {
+    return (
+      <div style={{ fontFamily: "'DM Sans', sans-serif", background: "#faf6f1", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center", color: "#7B5BC9" }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>✨</div>
+          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>Planner laden...</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ fontFamily: "'DM Sans', sans-serif", background: "#faf6f1", minHeight: "100vh", color: "#2d2a33" }}>
+      <style>{`
+        *{box-sizing:border-box;margin:0;padding:0}
+        .hdr{background:linear-gradient(135deg,#E8E2F0,#D4C6EC,#C9BEDF);padding:44px 24px 28px;text-align:center;position:relative;overflow:hidden}
+        .hdr h1{font-family:'Playfair Display',serif;font-weight:800;font-size:30px;color:#4A2C6B;position:relative;line-height:1.3}
+        .hdr h1 em{color:#7B5BC9;font-style:italic;font-weight:700}
+        .tabs{position:sticky;top:0;z-index:100;background:rgba(249,246,240,0.97);backdrop-filter:blur(8px);border-bottom:1px solid rgba(201,190,223,0.4);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+        .tabs::-webkit-scrollbar{display:none}
+        .tbtn{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;padding:14px 16px 12px;border:none;background:none;color:#7A6E65;cursor:pointer;white-space:nowrap;position:relative;transition:color 0.2s;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:4px}
+        .tbtn:hover{color:#4A2C6B}
+        .tbtn.on{color:#7B5BC9}
+        .tbtn.on::after{content:'';position:absolute;bottom:0;left:12px;right:12px;height:2px;background:#7B5BC9;border-radius:1px}
+        .pip{width:100%;height:3px;border-radius:2px;background:rgba(201,190,223,0.3);overflow:hidden}
+        .pipf{height:100%;border-radius:2px;background:#7B5BC9;transition:width 0.3s}
+        .chk-dot{width:14px;height:14px;border-radius:50%;background:#4caf80;display:flex;align-items:center;justify-content:center}
+        .pstrip{background:#7B5BC9;padding:16px 24px;position:relative}
+        .pinner{max-width:680px;margin:0 auto;display:flex;align-items:center;gap:14px}
+        .plbl{font-family:'Space Mono',monospace;font-size:10px;color:rgba(255,255,255,0.7);white-space:nowrap;letter-spacing:0.5px}
+        .ptrk{flex:1;height:6px;background:rgba(255,255,255,0.2);border-radius:3px;overflow:hidden}
+        .pfil{height:100%;background:linear-gradient(90deg,#C9BEDF,#E8E2F0);border-radius:3px;transition:width 0.4s}
+        .pcnt{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:#fff;white-space:nowrap}
+        .save-indicator{position:absolute;right:24px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:4px;font-family:'Space Mono',monospace;font-size:9px;color:rgba(255,255,255,0.6);letter-spacing:0.5px}
+        .cx{max-width:680px;margin:0 auto;padding:0 20px}
+        .wis{border-left:3px solid #7B5BC9;background:#fff;padding:16px 20px;margin:24px 0;border-radius:0 12px 12px 0}
+        .wis-l{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1.5px;color:#7B5BC9;text-transform:uppercase;margin-bottom:6px}
+        .scard{background:#fff;border-radius:14px;border:1px solid rgba(201,190,223,0.3);padding:24px;margin-bottom:16px;box-shadow:0 1px 4px rgba(74,44,107,0.04)}
+        .sinp{width:100%;padding:13px 16px;border:1px solid rgba(201,190,223,0.4);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;color:#2C2825;background:#F9F6F0;outline:none;transition:border-color 0.2s;margin-bottom:10px}
+        .sinp:focus{border-color:#7B5BC9}
+        .sinp::placeholder{color:#C4B8A8}
+        .sselect{width:100%;padding:13px 16px;border:1px solid rgba(201,190,223,0.4);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;color:#2C2825;background:#F9F6F0;outline:none;cursor:pointer;margin-bottom:10px;appearance:none;background-repeat:no-repeat;background-position:right 16px center;padding-right:40px}
+        .sselect:focus{border-color:#7B5BC9}
+        .freqctrl{display:flex;align-items:center;justify-content:space-between;background:#F9F6F0;border-radius:10px;padding:12px 16px;margin-bottom:10px;border:1px solid rgba(201,190,223,0.3)}
+        .freqlabel{font-size:13px;color:#2C2825;font-weight:500}
+        .freqbtns{display:flex;align-items:center;gap:12px}
+        .freqbtn{width:32px;height:32px;border-radius:50%;border:none;background:#7B5BC9;color:#fff;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+        .freqbtn:hover{transform:scale(1.1);background:#6B3F96}
+        .freqbtn:disabled{background:#C4B8A8;cursor:not-allowed}
+        .freqval{font-family:'Space Mono',monospace;font-size:18px;font-weight:700;color:#2C2825;min-width:60px;text-align:center}
+        .freqsub{font-size:11px;color:#7A6E65;display:block;margin-top:2px}
+        .ocard{background:#fff;border-radius:14px;border:1px solid rgba(201,190,223,0.3);padding:20px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:16px;box-shadow:0 1px 4px rgba(74,44,107,0.04)}
+        .ocard:hover{box-shadow:0 4px 16px rgba(123,91,201,0.12);transform:translateY(-1px)}
+        .ocirc{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+        .oinfo{flex:1;min-width:0}
+        .odl{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1.2px;color:#7B5BC9;text-transform:uppercase;margin-bottom:2px}
+        .oth{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:#2C2825;line-height:1.3}
+        .osub{font-size:13px;color:#7A6E65;margin-top:2px;line-height:1.4}
+        .timeline-badge{display:inline-block;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:#7B5BC9;background:rgba(123,91,201,0.08);padding:3px 10px;border-radius:20px;margin-top:4px}
+        .lm{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase}
+        .icard{background:#fff;border-radius:12px;border:1px solid rgba(201,190,223,0.3);border-left:3px solid #7B5BC9;padding:16px 20px;margin-bottom:16px;display:flex;align-items:flex-start;gap:10px}
+        .tcard{background:#fff;border-radius:12px;border:1px solid rgba(201,190,223,0.3);padding:16px 20px;margin-bottom:10px;display:flex;align-items:flex-start;gap:14px;cursor:pointer;transition:all 0.2s;box-shadow:0 1px 4px rgba(74,44,107,0.04)}
+        .tcard:hover{box-shadow:0 3px 12px rgba(123,91,201,0.1)}
+        .tcard.done{opacity:0.6}
+        .tcb{width:22px;height:22px;border-radius:6px;border:2px solid rgba(201,190,223,0.5);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all 0.2s}
+        .tcb.on{background:#4caf80;border-color:#4caf80}
+        .ttx{font-size:14px;color:#2C2825;line-height:1.6;transition:all 0.2s}
+        .ttx.s{text-decoration:line-through;color:#C4B8A8}
+        .prcard{background:linear-gradient(135deg,rgba(123,91,201,0.08),rgba(232,226,240,0.4));border-left:3px solid #7B5BC9;border-radius:0 12px 12px 0;padding:20px;margin:20px 0}
+        .prtx{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:#4A2C6B;line-height:1.5}
+        .pmcard{border:2px dashed #C9BEDF;border-radius:12px;padding:16px 20px;margin:16px 0;display:flex;align-items:flex-start;gap:10px;background:rgba(232,226,240,0.3)}
+        .energycard{background:linear-gradient(135deg,rgba(232,226,240,0.5),rgba(212,198,236,0.3));border-radius:12px;padding:16px 20px;margin:16px 0;border:1px solid rgba(201,190,223,0.3)}
+        .dnav{display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:20px;border-top:1px solid rgba(201,190,223,0.3)}
+        .dnbtn{display:flex;align-items:center;gap:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:#7B5BC9;background:none;border:none;cursor:pointer;padding:10px 16px;border-radius:10px;transition:all 0.2s}
+        .dnbtn:hover{background:rgba(123,91,201,0.08)}
+        .dnbtn.off{color:#C4B8A8;pointer-events:none}
+        .pillarcard{background:#fff;border-radius:14px;border:1px solid rgba(201,190,223,0.3);margin-bottom:12px;overflow:hidden;transition:all 0.2s;box-shadow:0 1px 4px rgba(74,44,107,0.04)}
+        .pillarhead{padding:18px 20px;cursor:pointer;display:flex;align-items:center;gap:14px}
+        .pillarhead:hover{background:#F9F6F0}
+        .pillaremoji{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+        .pillarinfo{flex:1;min-width:0}
+        .pillarname{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:#2C2825;line-height:1.3}
+        .pillardesc{font-size:12px;color:#7A6E65;margin-top:2px;line-height:1.4}
+        .pillarbody{padding:0 20px 20px;border-top:1px solid rgba(201,190,223,0.3);padding-top:14px}
+        .counter{display:flex;align-items:center;gap:10px;background:#F9F6F0;border-radius:10px;padding:8px 12px;margin-top:12px}
+        .counterbtn{width:28px;height:28px;border-radius:50%;border:none;color:#fff;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+        .counterbtn:hover{transform:scale(1.1)}
+        .counterval{font-family:'Space Mono',monospace;font-size:16px;font-weight:700;min-width:24px;text-align:center}
+        .counterlabel{font-size:12px;color:#7A6E65;flex:1}
+        .balancecard{background:#fff;border-radius:14px;border:1px solid rgba(201,190,223,0.3);padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(74,44,107,0.04)}
+        .balancebar{height:24px;border-radius:12px;overflow:hidden;display:flex;background:#E8E2F0;margin:12px 0 8px}
+        .balanceseg{display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;transition:width 0.4s}
+        .balancetip{padding:10px 14px;border-radius:8px;font-size:12px;line-height:1.5;margin-top:10px}
+        .ccard{background:linear-gradient(135deg,#4A2C6B,#6B3F96);border-radius:16px;padding:40px 28px;text-align:center;position:relative;overflow:hidden;margin-top:32px}
+        .ctab{display:inline-block;background:#7B5BC9;color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-size:15px;padding:14px 36px;border-radius:50px;border:none;cursor:pointer;transition:all 0.2s;position:relative}
+        .ctab:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(123,91,201,0.4)}
+        .ftr{background:linear-gradient(135deg,#4A2C6B,#6B3F96);padding:32px 24px;text-align:center;margin-top:48px}
+        .ftr-b{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:#fff;margin-bottom:4px}
+        .infobox{background:rgba(232,226,240,0.4);border-radius:10px;padding:14px 16px;margin:14px 0;font-size:13px;color:#2C2825;line-height:1.6;border-left:3px solid #7B5BC9}
+        .sumcard{background:linear-gradient(135deg,rgba(232,226,240,0.4),rgba(212,198,236,0.2));border-radius:12px;padding:16px 18px;margin-bottom:14px;border:1px solid rgba(201,190,223,0.3)}
+        .sumrow{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(201,190,223,0.2)}
+        .sumrow:last-child{border-bottom:none}
+        .sumlbl{font-size:12px;color:#7A6E65}
+        .sumval{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:#4A2C6B}
+        .schip{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:20px;border:1.5px solid rgba(201,190,223,0.5);background:#F9F6F0;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:#4a4555;cursor:pointer;transition:all 0.2s;margin:0 6px 8px 0}
+        .schip:hover{border-color:#7B5BC9;background:rgba(123,91,201,0.06)}
+        .schip.on{background:#7B5BC9;color:#fff;border-color:#7B5BC9}
+        .schip.on:hover{background:#6B3F96}
+        .notes-area{width:100%;min-height:100px;padding:14px 16px;border:1px solid rgba(201,190,223,0.4);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;color:#2C2825;background:#F9F6F0;outline:none;transition:border-color 0.2s;resize:vertical;line-height:1.6}
+        .notes-area:focus{border-color:#7B5BC9}
+        .notes-area::placeholder{color:#C4B8A8}
+        @media(max-width:600px){.hdr h1{font-size:24px}.tbtn{padding:12px 10px 10px;font-size:10px}.ocard{gap:12px;padding:16px}.oth{font-size:15px}}
+      `}</style>
+
+      <div className="hdr">
+        <p style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, fontWeight: 700, letterSpacing: 2, color: "#7B5BC9", textTransform: "uppercase", marginBottom: 12, position: "relative" }}>JOUW COACH LANCERINGSPLANNER</p>
+        <h1>Van Startpunt naar <em>Uitverkocht</em></h1>
+        <p style={{ fontSize: 14, color: "#7A6E65", marginTop: 16, position: "relative", lineHeight: 1.7, maxWidth: 500, marginLeft: "auto", marginRight: "auto" }}>
+          Jij hebt een geweldig aanbod. Nu is het tijd dat de wereld het weet. Doorloop 4 fases in jouw eigen tempo en zie je aanbod tot leven komen. 🚀
+        </p>
+      </div>
+
+      <div className="pstrip">
+        <div className="pinner">
+          <span className="plbl">LANCERINGSVOORTGANG</span>
+          <div className="ptrk"><div className="pfil" style={{ width: `${progress}%` }} /></div>
+          <span className="pcnt">{completedTasks}/{totalTasks}</span>
+        </div>
+        {saveStatus === "saved" && (
+          <div className="save-indicator">
+            <SaveIcon /> opgeslagen
+          </div>
+        )}
+      </div>
+
+      <div className="tabs">
+        <button className={`tbtn ${activeTab === "overview" ? "on" : ""}`} onClick={() => goTo("overview")}>Overzicht</button>
+        <button className={`tbtn ${activeTab === "tracker" ? "on" : ""}`} onClick={() => goTo("tracker")}>Tracker</button>
+        <button className={`tbtn ${activeTab === "library" ? "on" : ""}`} onClick={() => goTo("library")}>Bibliotheek</button>
+        {PHASES.map((p) => {
+          const pc = phaseComplete(p.key);
+          const pp = phaseProg(p.key);
+          return (
+            <button key={p.key} className={`tbtn ${activeTab === p.key ? "on" : ""}`} onClick={() => goTo(p.key)}>
+              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                {pc && <span className="chk-dot"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg></span>}
+                {p.label}
+              </span>
+              {!pc && <span className="pip"><span className="pipf" style={{ width: `${pp}%` }} /></span>}
+            </button>
+          );
+        })}
+      </div>
+
+      {activeTab === "overview" && (
+        <div className="cx" style={{ paddingTop: 24, paddingBottom: 40 }}>
+          <div className="wis">
+            <div className="wis-l">Hoe werkt deze planner?</div>
+            <p style={{ fontSize: 14, color: "#4a4555", lineHeight: 1.65 }}>
+              Deze interactieve tool begeleidt je door een social media lancering in 4 fases. Elke fase heeft een aanbevolen tijdlijn, maar je bepaalt zelf je tempo. Vul eerst je lancerings-setup in, bepaal jouw 1+1 strategie, en doorloop dan elke fase met concrete stappen. De Tracker-tab helpt je je content balans bewaken volgens de 80/20 regel. Je voortgang wordt automatisch opgeslagen.
+            </p>
+          </div>
+
+          <div className="scard">
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#4A2C6B,#6B3F96)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontSize: 18 }}>🚀</span>
+              </div>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 700 }}>Mijn Lancering</div>
+            </div>
+            <input className="sinp" placeholder="Mijn aanbod (bv. 1:1 coaching, online cursus...)" value={launchOffer} onChange={(e) => setLaunchOffer(e.target.value)} />
+            <input className="sinp" placeholder="Mijn ideale klant in één zin..." value={idealClient} onChange={(e) => setIdealClient(e.target.value)} />
+            <input className="sinp" placeholder="Mijn lanceringsdoel (bv. 5 klanten in 4 weken)" value={launchGoal} onChange={(e) => setLaunchGoal(e.target.value)} />
+            <input className="sinp" placeholder="Mijn lanceringsdatum..." value={launchDate} onChange={(e) => setLaunchDate(e.target.value)} style={{ marginBottom: 0 }} />
+          </div>
+
+          <div className="scard">
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#7c6bc4,#9080d4)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontSize: 18, color: "#fff", fontFamily: "'Space Mono', monospace", fontWeight: 700 }}>1+1</span>
+              </div>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 700 }}>Mijn 1+1 Strategie</div>
+            </div>
+            <p style={{ fontSize: 13, color: "#6b6575", lineHeight: 1.5, marginBottom: 16 }}>
+              Kies je social media kanalen + één content kanaal. Hoe meer focus, hoe sneller resultaat.
+            </p>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "#4a4555", marginBottom: 8, display: "block" }}>Social media kanalen</label>
+            <div style={{ marginBottom: 6 }}>
+              {SOCIAL_PLATFORMS.map((p) => (
+                <button key={p} className={`schip ${selectedSocials.includes(p) ? "on" : ""}`} onClick={() => toggleSocial(p)}>
+                  {selectedSocials.includes(p) && <span style={{ fontSize: 14 }}>✓</span>}
+                  {p}
+                </button>
+              ))}
+            </div>
+            {selectedSocials.length > 2 && (
+              <div style={{ background: "rgba(232,132,92,0.1)", color: "#b8551f", padding: "10px 14px", borderRadius: 8, fontSize: 12, lineHeight: 1.5, marginBottom: 10 }}>
+                💡 Je hebt {selectedSocials.length} kanalen geselecteerd. Focus op maximaal 2 kanalen voor sneller resultaat.
+              </div>
+            )}
+            <label style={{ fontSize: 12, fontWeight: 600, color: "#4a4555", marginBottom: 6, display: "block", marginTop: 8 }}>Primair content kanaal</label>
+            <select className="sselect" value={primaryContent} onChange={(e) => setPrimaryContent(e.target.value)}>
+              <option value="">Kies een kanaal...</option>
+              {CONTENT_CHANNELS.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <div className="infobox">
+              💡 <strong>Tip:</strong> Kies waar jouw ideale klant zit, wat je leuk vindt om te maken, en wat je kunt volhouden.
+            </div>
+          </div>
+
+          <div className="scard">
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#9579c2,#b794d4)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontSize: 18 }}>📅</span>
+              </div>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 700 }}>Mijn Postfrequentie</div>
+            </div>
+            <p style={{ fontSize: 13, color: "#6b6575", lineHeight: 1.5, marginBottom: 16 }}>
+              Hoe vaak ga je posten? Kies wat past bij jouw bandbreedte. Consistentie verslaat kwantiteit. 💪
+            </p>
+            {[
+              { label: `${socialLabel} posts`, sub: "per week", val: socialFrequency, set: setSocialFrequency },
+              { label: "Stories / korte updates", sub: "per week", val: storiesFrequency, set: setStoriesFrequency },
+              { label: `${primaryContent || "Content"} (langere vorm)`, sub: "per week", val: contentFrequency, set: setContentFrequency },
+            ].map(({ label, sub, val, set }, i) => (
+              <div key={i} className="freqctrl">
+                <div>
+                  <div className="freqlabel">{label}</div>
+                  <span className="freqsub">{sub}</span>
+                </div>
+                <div className="freqbtns">
+                  <button className="freqbtn" onClick={() => set(Math.max(0, val - 1))} disabled={val === 0}>−</button>
+                  <span className="freqval">{val}x</span>
+                  <button className="freqbtn" onClick={() => set(val + 1)}>+</button>
+                </div>
+              </div>
+            ))}
+            {(socialFrequency > 0 || storiesFrequency > 0 || contentFrequency > 0) && (
+              <div className="sumcard">
+                {[
+                  ["Totaal social posts (4 weken)", socialFrequency * 4],
+                  ["Totaal stories (4 weken)", storiesFrequency * 4],
+                  ["Totaal content (4 weken)", contentFrequency * 4],
+                ].map(([lbl, val]) => (
+                  <div key={lbl} className="sumrow">
+                    <span className="sumlbl">{lbl}</span>
+                    <span className="sumval">{val}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="lm" style={{ color: "#7a7485", marginBottom: 14, paddingLeft: 2, marginTop: 24 }}>JOUW 4 FASES</div>
+          {PHASES.map((p) => {
+            const pc = phaseComplete(p.key);
+            const pn = phaseDone(p.key);
+            const pt = phaseTotal(p.key);
+            const pp = phaseProg(p.key);
+            const r = 14, c = 2 * Math.PI * r, sd = (pp / 100) * c;
+            return (
+              <div key={p.key} className="ocard" onClick={() => goTo(p.key)}>
+                <div className="ocirc" style={{ background: pc ? "#4caf80" : p.color }}>
+                  {pc ? <CheckIcon /> : <span>{p.num}</span>}
+                </div>
+                <div className="oinfo">
+                  <div className="odl">{p.label} {p.emoji}</div>
+                  <div className="oth">{p.theme}</div>
+                  <div className="osub">{p.subtitle}</div>
+                  <div className="timeline-badge">⏱ {p.timeline}</div>
+                </div>
+                <div style={{ flexShrink: 0 }}>
+                  <div style={{ width: 36, height: 36, position: "relative" }}>
+                    <svg width="36" height="36" viewBox="0 0 36 36">
+                      <circle cx="18" cy="18" r={r} fill="none" stroke="rgba(45,42,51,0.06)" strokeWidth="3" />
+                      <circle cx="18" cy="18" r={r} fill="none" stroke={pc ? "#4caf80" : p.color} strokeWidth="3" strokeDasharray={`${sd} ${c}`} strokeLinecap="round" transform="rotate(-90 18 18)" />
+                    </svg>
+                    <span style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", fontFamily: "'Space Mono', monospace", fontSize: 9, fontWeight: 700, color: "#4a4555" }}>{pn}/{pt}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          <div className="ccard">
+            <div style={{ fontSize: 48, marginBottom: 16, position: "relative" }}>{progress >= 100 ? "🎉" : "✨"}</div>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 800, color: "#fff", marginBottom: 12, position: "relative" }}>
+              {progress >= 100 ? "Lancering voltooid!" : "Klaar om te beginnen?"}
+            </div>
+            <div style={{ fontSize: 15, color: "#C9BEDF", lineHeight: 1.7, maxWidth: 480, margin: "0 auto 24px", position: "relative" }}>
+              {progress >= 100
+                ? `Je hebt alle ${totalTasks} stappen voltooid. Op naar de volgende lancering!`
+                : `Je hebt ${completedTasks} van ${totalTasks} stappen voltooid. Stap voor stap dichter bij uitverkocht.`}
+            </div>
+            <button className="ctab" onClick={() => goTo("p1")}>
+              {progress >= 100 ? "Lancering opnieuw bekijken 🔄" : "Begin met Fase 1 →"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "tracker" && (
+        <div className="cx" style={{ paddingTop: 24, paddingBottom: 40 }}>
+          <div className="wis">
+            <div className="wis-l">Content Pijler Tracker</div>
+            <p style={{ fontSize: 14, color: "#4a4555", lineHeight: 1.65 }}>
+              Klik + bij elke pijler zodra je een post maakt. Houd je 80/20 balans in de gaten: 80% waarde (pijlers 1-4) en 20% verkopen (pijler 5).
+            </p>
+          </div>
+          <div className="balancecard">
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Mijn Content Balans</div>
+            <div style={{ fontSize: 12, color: "#6b6575", marginBottom: 8 }}>{totalPillarPosts} {totalPillarPosts === 1 ? "post" : "posts"} totaal · doel: 80% waarde / 20% verkoop</div>
+            {totalPillarPosts > 0 ? (
+              <>
+                <div className="balancebar">
+                  <div className="balanceseg" style={{ width: `${valuePercent}%`, background: "linear-gradient(90deg,#7c6bc4,#9579c2)" }}>
+                    {valuePercent >= 15 && `${valuePercent}% waarde`}
+                  </div>
+                  <div className="balanceseg" style={{ width: `${sellPercent}%`, background: "#e8845c" }}>
+                    {sellPercent >= 10 && `${sellPercent}%`}
+                  </div>
+                </div>
+                <div className="balancetip" style={{ background: isBalanced ? "rgba(76,175,128,0.1)" : "rgba(232,132,92,0.1)", color: isBalanced ? "#2e7d50" : "#b8551f" }}>
+                  {isBalanced ? "✓ Perfect in balans! Ga zo door."
+                    : sellPercent > 25 ? "⚠️ Te veel verkoop-content. Voeg meer waarde toe (pijlers 1-4)."
+                    : sellPercent < 15 && totalPillarPosts >= 5 ? "💡 Je geeft veel waarde. Vergeet niet ook te verkopen (pijler 5)!"
+                    : "🌱 Maak nog een paar posts om je balans te zien."}
+                </div>
+              </>
+            ) : (
+              <div style={{ padding: "20px", textAlign: "center", color: "#9b95a5", fontSize: 13 }}>
+                Nog geen posts toegevoegd. Klik + bij een pijler hieronder om te beginnen!
+              </div>
+            )}
+          </div>
+          {PILLARS.map((pillar) => {
+            const isOpen = openPillar === pillar.id;
+            return (
+              <div key={pillar.id} className="pillarcard">
+                <div className="pillarhead" onClick={() => setOpenPillar(isOpen ? null : pillar.id)}>
+                  <div className="pillaremoji" style={{ background: `${pillar.color}1a` }}>{pillar.emoji}</div>
+                  <div className="pillarinfo">
+                    <div className="pillarname">Pijler {pillar.id}: {pillar.name}</div>
+                    <div className="pillardesc">{pillar.desc}</div>
+                  </div>
+                  <ChevronDown open={isOpen} />
+                </div>
+                {isOpen && (
+                  <div className="pillarbody">
+                    <p style={{ fontSize: 13, color: "#4a4555", lineHeight: 1.6, marginBottom: 12 }}>
+                      <strong>Wat te delen:</strong> {pillar.what}
+                    </p>
+                  </div>
+                )}
+                <div style={{ padding: "0 20px 16px" }}>
+                  <div className="counter">
+                    <span className="counterlabel">Mijn posts in deze pijler:</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <button className="counterbtn" style={{ background: pillar.color }} onClick={() => decrementPillar(pillar.id)}>−</button>
+                      <span className="counterval">{pillarCounts[pillar.id]}</span>
+                      <button className="counterbtn" style={{ background: pillar.color }} onClick={() => incrementPillar(pillar.id)}>+</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {activeTab === "library" && (
+        <div className="cx" style={{ paddingTop: 24, paddingBottom: 40 }}>
+          <div className="wis">
+            <div className="wis-l">Bibliotheek</div>
+            <p style={{ fontSize: 14, color: "#4a4555", lineHeight: 1.65 }}>
+              Verzameling van content-resources. Klik een onderwerp open om de uitgewerkte structuur te zien, kant-en-klaar om toe te passen.
+            </p>
+          </div>
+          {LIBRARY_ITEMS.map((item) => {
+            const isOpen = openLibraryItem === item.id;
+            return (
+              <div key={item.id} className="pillarcard">
+                <div className="pillarhead" onClick={() => setOpenLibraryItem(isOpen ? null : item.id)}>
+                  <div className="pillaremoji" style={{ background: `${item.color}1a` }}>{item.emoji}</div>
+                  <div className="pillarinfo">
+                    <div className="pillarname">{item.title}</div>
+                    <div className="pillardesc">{item.subtitle}</div>
+                  </div>
+                  <ChevronDown open={isOpen} />
+                </div>
+                {isOpen && item.id === "stories" && (
+                  <div className="pillarbody">
+                    <p style={{ fontSize: 13, color: "#4a4555", lineHeight: 1.6, marginBottom: 18 }}>{item.intro}</p>
+                    {STORY_DAYS.map((day) => {
+                      const dayOpen = openStoryDay === day.id;
+                      return (
+                        <div key={day.id} style={{ background: "#faf6f1", borderRadius: 10, marginBottom: 10, overflow: "hidden", border: "1px solid rgba(45,42,51,0.05)" }}>
+                          <div onClick={() => setOpenStoryDay(dayOpen ? null : day.id)} style={{ padding: "14px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}>
+                            <div style={{ fontSize: 22 }}>{day.emoji}</div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#9579c2", fontWeight: 700 }}>{day.day.toUpperCase()} · {day.goal.toUpperCase()}</div>
+                              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 700, color: "#2d2a33", marginTop: 2 }}>{day.title}</div>
+                              <div style={{ fontSize: 12, color: "#6b6575", marginTop: 3, lineHeight: 1.4 }}>{day.desc}</div>
+                            </div>
+                            <div style={{ width: 28, height: 28, borderRadius: "50%", background: dayOpen ? "#9579c2" : "rgba(149,121,194,0.15)", color: dayOpen ? "#fff" : "#9579c2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, flexShrink: 0 }}>
+                              {dayOpen ? "−" : "+"}
+                            </div>
+                          </div>
+                          {dayOpen && (
+                            <div style={{ padding: "12px 16px 16px", borderTop: "1px solid rgba(45,42,51,0.06)" }}>
+                              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#9579c2", fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>JOUW STORY SEQUENTIE:</div>
+                              {day.sequence.map((step, idx) => (
+                                <div key={idx} style={{ display: "flex", gap: 10, marginBottom: 8, padding: "8px 12px", background: "#fff", borderRadius: 8 }}>
+                                  <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#9579c2", color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{idx + 1}</div>
+                                  <div style={{ fontSize: 13, color: "#2d2a33", lineHeight: 1.5 }}>{step}</div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {isOpen && item.id === "reels" && (
+                  <div className="pillarbody">
+                    <p style={{ fontSize: 13, color: "#4a4555", lineHeight: 1.6, marginBottom: 14 }}>{item.intro}</p>
+                    {REEL_TYPES.map((reel) => {
+                      const reelOpen = openReelType === reel.id;
+                      return (
+                        <div key={reel.id} style={{ background: "#faf6f1", borderRadius: 10, marginBottom: 10, overflow: "hidden", border: "1px solid rgba(45,42,51,0.05)" }}>
+                          <div onClick={() => setOpenReelType(reelOpen ? null : reel.id)} style={{ padding: "14px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}>
+                            <div style={{ fontSize: 22 }}>{reel.emoji}</div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#7B5BC9", fontWeight: 700 }}>{reel.goal.toUpperCase()} · {reel.duration.toUpperCase()}</div>
+                              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 700, color: "#2d2a33", marginTop: 2 }}>Format {reel.id}: {reel.title}</div>
+                              <div style={{ fontSize: 12, color: "#6b6575", marginTop: 3, lineHeight: 1.4 }}>{reel.desc}</div>
+                            </div>
+                            <div style={{ width: 28, height: 28, borderRadius: "50%", background: reelOpen ? "#7B5BC9" : "rgba(123,91,201,0.15)", color: reelOpen ? "#fff" : "#7B5BC9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, flexShrink: 0 }}>
+                              {reelOpen ? "−" : "+"}
+                            </div>
+                          </div>
+                          {reelOpen && (
+                            <div style={{ padding: "12px 16px 16px", borderTop: "1px solid rgba(45,42,51,0.06)" }}>
+                              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#7B5BC9", fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>STRUCTUUR:</div>
+                              {reel.structure.map((step, idx) => (
+                                <div key={idx} style={{ display: "flex", gap: 10, marginBottom: 8, padding: "8px 12px", background: "#fff", borderRadius: 8 }}>
+                                  <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#7B5BC9", color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{idx + 1}</div>
+                                  <div style={{ fontSize: 13, color: "#2d2a33", lineHeight: 1.5 }}>{step}</div>
+                                </div>
+                              ))}
+                              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#7B5BC9", fontWeight: 700, letterSpacing: 1, marginBottom: 8, marginTop: 14 }}>VOORBEELD HOOKS:</div>
+                              {reel.hooks.map((hook, idx) => (
+                                <div key={idx} style={{ padding: "8px 12px", background: "#fff", borderRadius: 8, marginBottom: 6, fontSize: 13, color: "#4a4555", lineHeight: 1.5, fontStyle: "italic", borderLeft: "3px solid #C9BEDF" }}>
+                                  "{hook}"
+                                </div>
+                              ))}
+                              <div style={{ background: "rgba(123,91,201,0.06)", borderRadius: 8, padding: "10px 14px", marginTop: 12, fontSize: 12, color: "#4a4555", lineHeight: 1.6 }}>
+                                💡 <strong>Waarom dit werkt:</strong> {reel.why}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {isOpen && item.id === "launch" && (
+                  <div className="pillarbody">
+                    <p style={{ fontSize: 13, color: "#4a4555", lineHeight: 1.6, marginBottom: 14 }}>{item.intro}</p>
+                    {LAUNCH_STEPS.map((step) => {
+                      const stepOpen = openLaunchStep === step.id;
+                      return (
+                        <div key={step.id} style={{ background: "#faf6f1", borderRadius: 10, marginBottom: 10, overflow: "hidden", border: "1px solid rgba(45,42,51,0.05)" }}>
+                          <div onClick={() => setOpenLaunchStep(stepOpen ? null : step.id)} style={{ padding: "14px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}>
+                            <div style={{ fontSize: 22 }}>{step.emoji}</div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#4A2C6B", fontWeight: 700 }}>FASE {step.id} · {step.timeline.toUpperCase()}</div>
+                              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 700, color: "#2d2a33", marginTop: 2 }}>{step.title}</div>
+                              <div style={{ fontSize: 12, color: "#6b6575", marginTop: 3, lineHeight: 1.4 }}>{step.desc}</div>
+                            </div>
+                            <div style={{ width: 28, height: 28, borderRadius: "50%", background: stepOpen ? "#4A2C6B" : "rgba(74,44,107,0.15)", color: stepOpen ? "#fff" : "#4A2C6B", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, flexShrink: 0 }}>
+                              {stepOpen ? "−" : "+"}
+                            </div>
+                          </div>
+                          {stepOpen && (
+                            <div style={{ padding: "12px 16px 16px", borderTop: "1px solid rgba(45,42,51,0.06)" }}>
+                              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#4A2C6B", fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>ACTIES:</div>
+                              {step.actions.map((action, idx) => (
+                                <div key={idx} style={{ display: "flex", gap: 10, marginBottom: 8, padding: "8px 12px", background: "#fff", borderRadius: 8 }}>
+                                  <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#4A2C6B", color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{idx + 1}</div>
+                                  <div style={{ fontSize: 13, color: "#2d2a33", lineHeight: 1.5 }}>{action}</div>
+                                </div>
+                              ))}
+                              <div style={{ background: "rgba(74,44,107,0.06)", borderRadius: 8, padding: "10px 14px", marginTop: 12, fontSize: 12, color: "#4a4555", lineHeight: 1.6 }}>
+                                💡 <strong>Kernprincipe:</strong> {step.principle}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {PHASES.map((phase) => {
+        if (activeTab !== phase.key) return null;
+        const tasks = TASKS[phase.key];
+        const allDone = tasks.every((t) => checked[t.id]);
+        const accentColor = phase.color;
+        return (
+          <div key={phase.key} className="cx" style={{ paddingTop: 28, paddingBottom: 40 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 24 }}>
+              <div className="ocirc" style={{ background: allDone ? "#4caf80" : accentColor, width: 48, height: 48 }}>
+                {allDone ? <CheckIcon /> : <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: 13 }}>{phase.num}</span>}
+              </div>
+              <div>
+                <div className="lm" style={{ color: accentColor }}>{phase.label} {phase.emoji}</div>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 800, color: "#2d2a33", lineHeight: 1.3 }}>
+                  <em style={{ color: accentColor, fontStyle: "italic", fontWeight: 700 }}>{phase.theme}</em>
+                </div>
+                <div style={{ fontSize: 14, color: "#6b6575", marginTop: 4, lineHeight: 1.5 }}>{phase.subtitle}</div>
+                <div className="timeline-badge" style={{ marginTop: 8 }}>⏱ Aanbevolen: {phase.timeline}</div>
+              </div>
+            </div>
+
+            {phase.key === "p2" && (
+              <div className="scard">
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700, marginBottom: 12 }}>De 5 Content Pijlers 🎯</div>
+                <p style={{ fontSize: 13, color: "#6b6575", lineHeight: 1.5, marginBottom: 14 }}>
+                  Goede content volgt een reis: <strong>Zien → Voelen → Kiezen</strong>.
+                </p>
+                {PILLARS.map((pl) => (
+                  <div key={pl.id} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderBottom: "1px solid rgba(45,42,51,0.05)" }}>
+                    <div style={{ fontSize: 20 }}>{pl.emoji}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#2d2a33" }}>Pijler {pl.id}: {pl.name}</div>
+                      <div style={{ fontSize: 12, color: "#6b6575", lineHeight: 1.4, marginTop: 2 }}>{pl.desc}</div>
+                    </div>
+                  </div>
+                ))}
+                <button onClick={() => goTo("tracker")} style={{ marginTop: 14, background: "none", border: "1px solid #e8845c", color: "#e8845c", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600 }}>
+                  Open Content Tracker →
+                </button>
+              </div>
+            )}
+
+            <div className="icard" style={{ borderLeftColor: accentColor }}>
+              <div>
+                <div className="lm" style={{ color: accentColor, marginBottom: 6 }}>Fasefocus</div>
+                <div style={{ fontSize: 14, color: "#4a4555", lineHeight: 1.6, fontStyle: "italic" }}>{INTENTIONS[phase.key]}</div>
+              </div>
+            </div>
+
+            {tasks.map((task) => {
+              const isDone = checked[task.id];
+              return (
+                <div key={task.id} className={`tcard ${isDone ? "done" : ""}`} onClick={() => toggleCheck(task.id)}>
+                  <div className={`tcb ${isDone ? "on" : ""}`} style={isDone ? {} : { borderColor: `${accentColor}40` }}>{isDone && <CheckIcon />}</div>
+                  <div className={`ttx ${isDone ? "s" : ""}`}>{task.text}</div>
+                </div>
+              );
+            })}
+
+            <div className="prcard" style={{ borderLeftColor: accentColor, background: `linear-gradient(135deg,${accentColor}0d,${accentColor}05)` }}>
+              <div className="lm" style={{ color: accentColor, marginBottom: 8 }}>Lanceringswijsheid</div>
+              <div className="prtx">{PRINCIPLES[phase.key]}</div>
+            </div>
+
+            <div className="energycard">
+              <div style={{ fontSize: 14, color: "#4a4555", lineHeight: 1.6, fontWeight: 500 }}>{ENERGY_BOOST[phase.key]}</div>
+            </div>
+
+            <div style={{ marginTop: 16, marginBottom: 16 }}>
+              <div style={{ background: "linear-gradient(135deg,#4A2C6B,#6B3F96)", borderRadius: "12px 12px 0 0", padding: "14px 20px" }}>
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: "#e8845c", textTransform: "uppercase" }}>💡 Claude Prompt Tip</span>
+              </div>
+              <div style={{ background: "#fff", border: "1px solid rgba(201,190,223,0.3)", borderTop: "none", borderRadius: "0 0 12px 12px", padding: "16px 20px" }}>
+                <div style={{ fontSize: 14, color: "#4a4555", lineHeight: 1.7 }}>{TIPS[phase.key]}</div>
+              </div>
+            </div>
+
+            <div className="pmcard" style={{ borderColor: accentColor, background: `${accentColor}08` }}>
+              <div style={{ marginTop: 1 }}><PencilIcon /></div>
+              <div>
+                <div className="lm" style={{ color: accentColor }}>Pak een pen ✏️</div>
+                <div style={{ fontSize: 13, color: "#4a4555", lineHeight: 1.6, marginTop: 4 }}>{GRAB_PEN[phase.key]}</div>
+              </div>
+            </div>
+
+            <div className="pmcard" style={{ borderColor: "#7c6bc4", background: "rgba(124,107,196,0.04)", borderStyle: "solid" }}>
+              <div style={{ marginTop: 1 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c6bc4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                </svg>
+              </div>
+              <div>
+                <div className="lm" style={{ color: "#7c6bc4" }}>Reflectie 💪</div>
+                <div style={{ fontSize: 13, color: "#4a4555", lineHeight: 1.6, marginTop: 4, fontStyle: "italic" }}>{REFLECTIONS[phase.key]}</div>
+              </div>
+            </div>
+
+            <div className="scard" style={{ marginTop: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <span style={{ fontSize: 18 }}>📝</span>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700 }}>Mijn Notities</div>
+              </div>
+              <textarea
+                className="notes-area"
+                placeholder="Schrijf hier je gedachten, ideeën of aantekeningen voor deze fase..."
+                value={phaseNotes[phase.key]}
+                onChange={(e) => updatePhaseNote(phase.key, e.target.value)}
+              />
+            </div>
+
+            <div className="dnav">
+              <button className={`dnbtn ${!prev ? "off" : ""}`} onClick={() => prev && goTo(prev.key)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "rotate(180deg)" }}><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
+                {prev ? prev.label : ""}
+              </button>
+              <button className="dnbtn" onClick={() => goTo("overview")} style={{ color: "#7a7485" }}>Overzicht</button>
+              <button className={`dnbtn ${!next ? "off" : ""}`} onClick={() => next && goTo(next.key)}>
+                {next ? next.label : ""}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
+              </button>
+            </div>
+          </div>
+        );
+      })}
+
+      {activeTab === "overview" && (
+        <div className="ftr">
+          <div className="ftr-b">Jouw Lancering Begint Hier 🚀</div>
+          <div style={{ fontSize: 12, color: "#C9BEDF", marginTop: 4 }}>Gebruik deze planner als jouw dagelijkse kompas</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.render(React.createElement(LaunchPlanner), document.getElementById('root'));
+</script>
+</body>
+</html>
